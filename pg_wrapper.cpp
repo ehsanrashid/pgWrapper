@@ -407,3 +407,4 @@ void ConnectionPool::return_connection(std::unique_ptr<Database> conn) {
 }
 
     }  // namespace pg_wrapper
+
