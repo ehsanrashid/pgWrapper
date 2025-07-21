@@ -207,122 +207,104 @@ void Transaction::abort() {
 }
 
 // Quote and escape values
-std::string Transaction::quot
-
-    // Execute query
-    Result
-    Transaction::exec(const std::string& sql) {
-    try {
-        return Result(txn_->exec(sql));
-    } catch (const pqxx::sql_error& e) {
-        throw QueryError(e.what());
-    } catch (const std::exception& e) {
-        throw DatabaseError(e.what());
-    }
-}
-
-// Execute parameterized query
-template <typename... Args>
-Result Transaction::exec_params(const std::string& sql, Args&&... args) {
-    try {
-        return Result(txn_->exec_params(sql, std::fore(const std::string& value) {
-            return txn_->quote(value);
+std::string Transaction::quote(const std::string& value) {
+    return txn_->quote(value);
 }
 
 std::string Transaction::quote_name(const std::string& name) {
-            return txn_->quote_name(name);
+    return txn_->quote_name(name);
 }
 
 // Constructor with connection string
 Database::Database(const std::string& connectionString) {
-            try {
-                conn_ = std::make_unique<pqxx::connection>(connectionString);
-            } catch (const std::exception& e) {
-                throw ConnectionError(e.what());
-            }
+    try {
+        conn_ = std::make_unique<pqxx::connection>(connectionString);
+    } catch (const std::exception& e) {
+        throw ConnectionError(e.what());
+    }
 }
 
 // Constructor with individual parameters
 Database::Database(const std::string& host, const std::string& port,
                    const std::string& dbname, const std::string& user,
                    const std::string& password) {
-            std::ostringstream oss;
-            oss << "host=" << host << " port=" << port << " dbname=" << dbname
-                << " user=" << user << " password=" << password;
+    std::ostringstream oss;
+    oss << "host=" << host << " port=" << port << " dbname=" << dbname
+        << " user=" << user << " password=" << password;
 
-            try {
-                conn_ = std::make_unique<pqxx::connection>(oss.str());
-            } catch (const std::exception& e) {
-                throw ConnectionError(e.what());
-            }
+    try {
+        conn_ = std::make_unique<pqxx::connection>(oss.str());
+    } catch (const std::exception& e) {
+        throw ConnectionError(e.what());
+    }
 }
 
 // Create transaction
 Transaction Database::begin_transaction() {
-            if (!is_open()) {
-                throw ConnectionError("Connection is not open");
-            }
-            return Transaction(*conn_);
+    if (!is_open()) {
+        throw ConnectionError("Connection is not open");
+    }
+    return Transaction(*conn_);
 }
 
 // Execute query without transaction (auto-commit)
 Result Database::exec(const std::string& sql) {
-            auto txn = begin_transaction();
-            auto result = txn.exec(sql);
-            txn.commit();
-            return result;
+    auto txn = begin_transaction();
+    auto result = txn.exec(sql);
+    txn.commit();
+    return result;
 }
 
 // Execute parameterized query without transaction
 template <typename... Args>
 Result Database::exec_params(const std::string& sql, Args&&... args) {
-            auto txn = begin_transaction();
-            auto result = txn.exec_params(sql, std::forward<Args>(args)...);
-            txn.commit();
-            return result;
+    auto txn = begin_transaction();
+    auto result = txn.exec_params(sql, std::forward<Args>(args)...);
+    txn.commit();
+    return result;
 }
 
 // Prepare statement
 void Database::prepare(const std::string& name, const std::string& sql) {
-            try {
-                conn_->prepare(name, sql);
-            } catch (const std::exception& e) {
-                throw DatabaseError(e.what());
-            }
+    try {
+        conn_->prepare(name, sql);
+    } catch (const std::exception& e) {
+        throw DatabaseError(e.what());
+    }
 }
 
 // Execute prepared statement without transaction
 template <typename... Args>
 Result Database::exec_prepared(const std::string& name, Args&&... args) {
-            auto txn = begin_transaction();
-            auto result = txn.exec_prepared(name, std::forward<Args>(args)...);
-            txn.commit();
-            return result;
+    auto txn = begin_transaction();
+    auto result = txn.exec_prepared(name, std::forward<Args>(args)...);
+    txn.commit();
+    return result;
 }
 
 // Check if table exists
 bool Database::table_exists(const std::string& tableName) {
-            auto result = exec_params(
-                "SELECT EXISTS (SELECT FROM information_schema.tables WHERE "
-                "table_name "
-                "= $1)",
-                tableName);
-            return result.front().get<bool>(0);
+    auto result = exec_params(
+        "SELECT EXISTS (SELECT FROM information_schema.tables WHERE "
+        "table_name "
+        "= $1)",
+        tableName);
+    return result.front().get<bool>(0);
 }
 
 // Get table column names
 std::vector<std::string> Database::get_columns(const std::string& tableName) {
-            auto result = exec_params(
-                "SELECT column_name FROM information_schema.columns WHERE "
-                "table_name = "
-                "$1 ORDER BY ordinal_position",
-                tableName);
+    auto result = exec_params(
+        "SELECT column_name FROM information_schema.columns WHERE "
+        "table_name = "
+        "$1 ORDER BY ordinal_position",
+        tableName);
 
-            std::vector<std::string> columns;
-            for (const auto& row : result) {
-                columns.push_back(row.get<std::string>(0));
-            }
-            return columns;
+    std::vector<std::string> columns;
+    for (const auto& row : result) {
+        columns.push_back(row.get<std::string>(0));
+    }
+    return columns;
 }
 
 // Simple insert helper
@@ -330,80 +312,80 @@ template <typename... Args>
 void Database::insert(const std::string& table,
                       const std::vector<std::string>& columns,
                       Args&&... values) {
-            if (sizeof...(values) != columns.size()) {
-                throw std::invalid_argument(
-                    "Number of values doesn't match number of columns");
-            }
+    if (sizeof...(values) != columns.size()) {
+        throw std::invalid_argument(
+            "Number of values doesn't match number of columns");
+    }
 
-            std::stringstream sql;
-            sql << "INSERT INTO " << table << " (";
-            for (size_t i = 0; i < columns.size(); ++i) {
-                if (i > 0) sql << ", ";
-                sql << columns[i];
-            }
-            sql << ") VALUES (";
-            for (size_t i = 0; i < columns.size(); ++i) {
-                if (i > 0) sql << ", ";
-                sql << "$" << (i + 1);
-            }
-            sql << ")";
+    std::stringstream sql;
+    sql << "INSERT INTO " << table << " (";
+    for (size_t i = 0; i < columns.size(); ++i) {
+        if (i > 0) sql << ", ";
+        sql << columns[i];
+    }
+    sql << ") VALUES (";
+    for (size_t i = 0; i < columns.size(); ++i) {
+        if (i > 0) sql << ", ";
+        sql << "$" << (i + 1);
+    }
+    sql << ")";
 
-            exec_params(sql.str(), std::forward<Args>(values)...);
+    exec_params(sql.str(), std::forward<Args>(values)...);
 }
 
 // Close connection
 void Database::close() {
-            if (conn_) {
-                conn_.reset();  // conn_->close();
-            }
+    if (conn_) {
+        conn_.reset();  // conn_->close();
+    }
 }
 
 ConnectionPool::ConnectionPool(const std::string& connectionString,
                                size_t maxConnections)
     : connectionString_(connectionString), maxConnections_(maxConnections) {
-            pool_.reserve(maxConnections_);
+    pool_.reserve(maxConnections_);
 }
 
 ConnectionPool::~ConnectionPool() {
-            std::lock_guard<std::mutex> lock(mutex_);
-            pool_.clear();  // ensures cleanup
+    std::lock_guard<std::mutex> lock(mutex_);
+    pool_.clear();  // ensures cleanup
 }
 
 std::unique_ptr<Database> ConnectionPool::get_connection() {
-            std::lock_guard<std::mutex> lock(mutex_);
+    std::lock_guard<std::mutex> lock(mutex_);
 
-            // If there's an available one in the pool, return it
-            if (!pool_.empty()) {
-                auto conn = std::move(pool_.back());
-                pool_.pop_back();
-                return conn;
-            }
+    // If there's an available one in the pool, return it
+    if (!pool_.empty()) {
+        auto conn = std::move(pool_.back());
+        pool_.pop_back();
+        return conn;
+    }
 
-            // If we haven't reached the max, create a new one
-            if (currentConnections_ < maxConnections_) {
-                ++currentConnections_;
-                return std::make_unique<Database>(connectionString_);
-            }
+    // If we haven't reached the max, create a new one
+    if (currentConnections_ < maxConnections_) {
+        ++currentConnections_;
+        return std::make_unique<Database>(connectionString_);
+    }
 
-            // Pool exhausted
-            return nullptr;
+    // Pool exhausted
+    return nullptr;
 }
 
 void ConnectionPool::return_connection(std::unique_ptr<Database> conn) {
-            if (!conn || !conn->is_open()) {
-                // Drop broken connection
-                std::lock_guard<std::mutex> lock(mutex_);
-                --currentConnections_;
-                return;
-            }
+    if (!conn || !conn->is_open()) {
+        // Drop broken connection
+        std::lock_guard<std::mutex> lock(mutex_);
+        --currentConnections_;
+        return;
+    }
 
-            std::lock_guard<std::mutex> lock(mutex_);
-            if (pool_.size() < maxConnections_) {
-                pool_.push_back(std::move(conn));
-            } else {
-                // Pool full — destroy the extra connection
-                --currentConnections_;
-            }
+    std::lock_guard<std::mutex> lock(mutex_);
+    if (pool_.size() < maxConnections_) {
+        pool_.push_back(std::move(conn));
+    } else {
+        // Pool full — destroy the extra connection
+        --currentConnections_;
+    }
 }
 
-    }  // namespace pg_wrapper
+}  // namespace pg_wrapper
