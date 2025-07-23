@@ -16,6 +16,9 @@ include_directories(${PQXX_INCLUDE_DIRS})
 # Collect source files
 file(GLOB SOURCES "*.cpp")
 
+# Collect header files
+file(GLOB HEADERS "*.h")
+
 # Create executable
 #add_executable(${PROJECT_NAME} ${SOURCES})
 add_library(${PROJECT_NAME} ${SOURCES})
@@ -34,7 +37,7 @@ install(TARGETS ${PROJECT_NAME}
         ARCHIVE DESTINATION lib
         RUNTIME DESTINATION bin
         INCLUDES DESTINATION include)
-install(FILES ${HEADERS} DESTINATION include/${PROJECT_NAME})
+install(FILES ${HEADERS} DESTINATION include/)
 
 
 
