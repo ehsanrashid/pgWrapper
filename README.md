@@ -27,10 +27,11 @@ git clone https://github.com/ehsanrashid/pgWrapper
 cd pgWrapper
 mkdir build && cd build
 cmake ..
-make
+make -j$(nproc)
+sudo make install #to install lib and headers locally
 ```
 
-This will build the `pgWrapper` library. You can link it to your own projects or use the provided example in `main.cpp_`.
+This will build the `pgWrapper` library and install it to your system. The headers will be installed to `/usr/local/include/` and the library to `/usr/local/lib/`. You can then link it to your own projects or use the provided example in `main.cpp_`.
 
 ## Usage Example
 
@@ -43,7 +44,7 @@ Below is a minimal example of how to use `pgWrapper` to connect to a PostgreSQL 
 
 int main() {
     try {
-        pg_wrapper::Database db("localhost", "5432", "testdb", "testuser", "testpass");
+        pg_wrapper::Database db("<host>>", "<port#>", "<database_name>", "<user>", "<password>");
 
         // Create a table
         db.exec("CREATE TABLE IF NOT EXISTS test (id SERIAL PRIMARY KEY, name TEXT, age INTEGER)");
@@ -87,9 +88,6 @@ See `main.cpp_` for a comprehensive demonstration of advanced NULL handling and 
   - `pg_wrapper::ConnectionError`
   - `pg_wrapper::QueryError`
 
-## Contributing
-
-- Syed Huzaifa Ahmed (https://github.com/Huzaifa309)
 
 ## Author
 
