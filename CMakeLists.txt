@@ -29,3 +29,13 @@ target_link_libraries(${PROJECT_NAME}
 # Compiler flags
 target_compile_options(${PROJECT_NAME} PRIVATE ${PQXX_CFLAGS_OTHER})
 
+install(TARGETS ${PROJECT_NAME}
+        LIBRARY DESTINATION lib
+        ARCHIVE DESTINATION lib
+        RUNTIME DESTINATION bin
+        INCLUDES DESTINATION include)
+install(FILES ${HEADERS} DESTINATION include/${PROJECT_NAME})
+
+
+
+
