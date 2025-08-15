@@ -37,9 +37,6 @@ class Database;
 
 // Row class - represents a single row from query results
 class Row {
-   private:
-    pqxx::row row_;
-
    public:
     explicit Row(const pqxx::row& row);
 
@@ -56,7 +53,7 @@ class Row {
     std::optional<T> get_optional(int col) const;
 
     template <typename T>
-    std::optional<T> get_optional(const std::string& col_name) const;
+    std::optional<T> get_optional(const std::string& colName) const;
 
     // Check if column is NULL
     bool is_null(int col) const;
@@ -68,21 +65,18 @@ class Row {
 
     // // Column name access
     // std::string column_name(size_t col) const;
+
+   private:
+    pqxx::row _row;
 };
 
 // Result class - represents query results
 class Result {
-   private:
-    pqxx::result result_;
-
    public:
     explicit Result(const pqxx::result& result);
 
     // Iterator support
     class iterator {
-       private:
-        pqxx::result::const_iterator itr_;
-
        public:
         explicit iterator(pqxx::result::const_iterator itr);
 
@@ -93,6 +87,9 @@ class Result {
 
         iterator& operator++();
         iterator operator++(int);
+
+       private:
+        pqxx::result::const_iterator _itr;
     };
 
     iterator begin() const;
@@ -121,14 +118,13 @@ class Result {
     // Convert all rows to vector
     template <typename T>
     std::vector<T> to_vector(std::function<T(const Row&)> converter) const;
+
+   private:
+    pqxx::result _result;
 };
 
 // Transaction class
 class Transaction {
-   private:
-    std::unique_ptr<pqxx::work> txn_;
-    bool committed_;
-
    public:
     explicit Transaction(pqxx::connection& conn);
 
@@ -155,13 +151,14 @@ class Transaction {
     std::string quote(const std::string& value);
 
     std::string quote_name(const std::string& name);
+
+   private:
+    std::unique_ptr<pqxx::work> _txn;
+    bool _committed;
 };
 
 // Database connection class
 class Database {
-   private:
-    std::unique_ptr<pqxx::connection> conn_;
-
    public:
     // Constructor with connection string
     explicit Database(const std::string& connectionString);
@@ -172,13 +169,13 @@ class Database {
              const std::string& password);
 
     // Check if connected
-    bool is_open() const { return conn_ && conn_->is_open(); }
+    bool is_open() const { return _conn && _conn->is_open(); }
 
     // Get connection info
-    std::string dbname() const { return conn_->dbname(); }
-    std::string username() const { return conn_->username(); }
-    std::string hostname() const { return conn_->hostname(); }
-    std::string port() const { return conn_->port(); }
+    std::string dbname() const { return _conn->dbname(); }
+    std::string username() const { return _conn->username(); }
+    std::string hostname() const { return _conn->hostname(); }
+    std::string port() const { return _conn->port(); }
 
     // Create transaction
     Transaction begin_transaction();
@@ -212,17 +209,13 @@ class Database {
 
     // Close connection
     void close();
+
+   private:
+    std::unique_ptr<pqxx::connection> _conn;
 };
 
 // Connection pool class for multi-threaded applications
 class ConnectionPool {
-   private:
-    std::string connectionString_;
-    std::vector<std::unique_ptr<Database>> pool_;
-    std::mutex mutex_;
-    size_t maxConnections_;
-    size_t currentConnections_{0};  // Tracks live connections
-
    public:
     explicit ConnectionPool(const std::string& connectionString,
                             size_t maxConnections = 10);
@@ -232,6 +225,13 @@ class ConnectionPool {
     std::unique_ptr<Database> get_connection();
 
     void return_connection(std::unique_ptr<Database> conn);
+
+   private:
+    std::string _connectionString;
+    std::vector<std::unique_ptr<Database>> _pool;
+    std::mutex _mutex;
+    size_t _maxConnections;
+    size_t _currentConnections{0};  // Tracks live connections
 };
 
 }  // namespace pg_wrapper
