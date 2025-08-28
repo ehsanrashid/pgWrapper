@@ -24,8 +24,7 @@ file(GLOB HEADERS "src/*.h")
 add_library(${PROJECT_NAME} ${SOURCES})
 
 # Link libraries
-target_link_libraries(${PROJECT_NAME} 
-    PRIVATE 
+target_link_libraries(${PROJECT_NAME} PRIVATE
     ${PQXX_LIBRARIES}
 )
 
@@ -38,7 +37,3 @@ install(TARGETS ${PROJECT_NAME}
         RUNTIME DESTINATION bin
         INCLUDES DESTINATION include)
 install(FILES ${HEADERS} DESTINATION include/)
-
-
-
-
