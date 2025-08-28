@@ -14,10 +14,10 @@ pkg_check_modules(PQXX REQUIRED libpqxx)
 include_directories(${PQXX_INCLUDE_DIRS})
 
 # Collect source files
-file(GLOB SOURCES "src/*.cpp")
+file(GLOB SOURCES CONFIGURE_DEPENDS src/*.cpp)
 
 # Collect header files
-file(GLOB HEADERS "src/*.h")
+file(GLOB HEADERS CONFIGURE_DEPENDS src/*.h)
 
 # Create executable
 #add_executable(${PROJECT_NAME} ${SOURCES})
